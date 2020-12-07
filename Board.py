@@ -1,4 +1,5 @@
 import json
+from random import shuffle
 
 class Board():
 	def __init__(self, board_file, n_players):
@@ -15,6 +16,13 @@ class Board():
 		self.players = [{"Position": 0, "Cheeses": []} for i in range(n_players)]
 
 		self.Validate()
+
+		self.SelectedQuestions = {}
+
+		for category in self.Categories:
+			self.RenewQuestions(category)
+
+			print(self.Questions[category])
 
 	def Validate(self):
 		""" Tests if everything was imported properly """
@@ -36,14 +44,9 @@ class Board():
 
 		if steps < 1: return
 
-		try:
-			curr_pos = self.players[player_index]["Position"]
-		except IndexError:
-			raise PlayerError(f"There is no player with index {player_index}")
+		curr_pos = self.players[player_index]["Position"]
 
 		options = self.Nodes[self.players[player_index]["Position"]]["Adj"].copy()
-
-		print(options)
 
 		if previous != -1:
 			options.remove(previous)
@@ -51,8 +54,6 @@ class Board():
 		if len(options) > 1 and direction == -1:	# decision needed
 			raise DecisionNeeded(options, steps, "Choice needed")
 
-		print(len(options))
-		
 		if len(options) == 1:
 			self.players[player_index]["Position"] = options[0]
 		elif direction not in options:
@@ -63,14 +64,55 @@ class Board():
 		print(f"Was {curr_pos} moved to ", self.players[player_index]["Position"])
 
 		self.MovePlayer(player_index, steps-1, -1, curr_pos)
-		
+	
+	def GetQuestion(self, category):
+		""" Returns a question from a category """
+
+		if self.SelectedQuestions[category] >= len(self.Questions[category]):
+			raise QuestionError(f"All questions from {category} where used", category)
+
+		question = self.Questions[category][self.SelectedQuestions[category]]
+
+		self.SelectedQuestions[category] += 1
+
+		return question
+
+	def GetQuestionForPlayer(self, player_index):
+		""" Returns a question from the category of the node the player is in """
+
+		category = self.Nodes[self.players[player_index]["Position"]]["Category"]
+
+		return self.GetQuestion(category)
+
+	def RenewQuestions(self, category):
+		""" Puts every question of a category back in game """
+
+		self.SelectedQuestions[category] = 0
+			
+		shuffle(self.Questions[category])
+
+	def GiveCheese(self, category, player_index):
+		""" Gives a cheese from a certain category to a player """
+
+		if category not in self.players[player_index]["Cheeses"]:
+			self.players[player_index]["Cheeses"].append(category)
+
+	def CheckWin(self, player_index):
+		""" Checks if a player has won """
+
+		if len(self.players[player_index]["Cheeses"]) == len(self.Categories):
+			return True
+
+		return False
+
 class ConfigFileError(Exception):
 	def __init__(self, message):
 		super().__init__(message)
 
-class PlayerError(Exception):
-	def __init__(self, message):
+class QuestionError(Exception):
+	def __init__(self, message, category):
 		super().__init__(message)
+		self.category = category
 
 class DecisionNeeded(Exception):
 	def __init__(self, options, steps, message):
@@ -87,3 +129,15 @@ if __name__ == "__main__":
 		except DecisionNeeded as decision:
 			print(decision.options)
 			a.MovePlayer(0, decision.steps, int(input("Choice: ")))
+
+		try:
+			print("Question: ", a.GetQuestionForPlayer(0))
+		except QuestionError as e:
+			a.RenewQuestions(e.category)
+
+		i = int(input("Give cheese?"))
+		if i != -1:
+			a.GiveCheese(a.Categories[i], 0)
+
+			if a.CheckWin(0):
+				break
