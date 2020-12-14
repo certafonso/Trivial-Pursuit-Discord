@@ -91,11 +91,19 @@ class Board():
 			
 		shuffle(self.Questions[category])
 
-	def GiveCheese(self, category, player_index):
+	def GiveCheese(self, player_index, category = None):
 		""" Gives a cheese from a certain category to a player """
 
-		if category not in self.players[player_index]["Cheeses"]:
+		if category == None:	# category not specified
+			if self.Nodes[self.players[player_index]["Position"]]["CategoryHub"]:
+				category = self.Nodes[self.players[player_index]["Position"]]["Category"]
+			
+			else: return False	# not in category hub
+
+		if category not in self.players[player_index]["Cheeses"]:	# check if player already has the cheese
 			self.players[player_index]["Cheeses"].append(category)
+			return True
+		else: return False
 
 	def CheckWin(self, player_index):
 		""" Checks if a player has won """
@@ -137,7 +145,7 @@ if __name__ == "__main__":
 
 		i = int(input("Give cheese?"))
 		if i != -1:
-			a.GiveCheese(a.Categories[i], 0)
+			print(a.GiveCheese(0))
 
 			if a.CheckWin(0):
 				break

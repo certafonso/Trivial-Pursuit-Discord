@@ -32,7 +32,6 @@ class Game():
 				await self.Channel.send(f"You rolled a {self.steps}!")
 
 				await self.move(self.steps)
-
 					
 		elif self.GameStage == 1:   # Stage 1 - Choose Direction
 			if command[0] == "-go" and self.Players[self.PlayerTurn] == message.author:
@@ -40,6 +39,9 @@ class Game():
 
 		elif self.GameStage == 3:   # Stage 3 - answer question
 			if command[0] == "-accept" and self.Players[0] == message.author:
+				if self.Board.GiveCheese(self.PlayerTurn):	# won cheese
+					await self.Channel.send(f"Great! You won a cheese.")
+
 				self.GameStage = 0
 				mention = self.Players[self.PlayerTurn].mention
 				await self.Channel.send(f"Great! {mention} you get to go again.")
