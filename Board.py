@@ -1,5 +1,6 @@
 import json
 from random import shuffle
+import pygame
 
 class Board():
 	def __init__(self, board_file, n_players):
@@ -24,6 +25,10 @@ class Board():
 
 			print(self.Questions[category])
 
+		self.Graphics = board_config["Graphics"]
+
+		self.Display = None
+
 	def Validate(self):
 		""" Tests if everything was imported properly """
 
@@ -38,6 +43,10 @@ class Board():
 			category = self.Nodes[i]["Category"]
 			if category not in self.Categories:
 				raise ConfigFileError(f"Node {i} has the category {category}, that doesn't exist")
+
+			for connection in self.Nodes[i]["Adj"]:
+				if connection > len(self.Nodes):
+					raise ConfigFileError(f"Node {i} is adjacent to node {connection}, that doesn't exist")
 
 	def MovePlayer(self, player_index, steps, direction, previous = -1):
 		""" Moves a player a certain amount of steps in a direction of the board """
@@ -113,6 +122,21 @@ class Board():
 
 		return False
 
+	def StartGraphics(self):
+		""" Loads all images needed for the graphic component """
+
+		for i in self.Graphics:
+			print(self.Graphics[i])
+			self.Graphics[i] = pygame.image.load(self.Graphics[i])
+
+		self.Graphics["Size"] = (self.Graphics["Board"].get_width(), self.Graphics["Board"].get_width())
+
+		pygame.init()
+
+		self.Display = pygame.display.set_mode(self.Graphics["Size"])
+		pygame.display.set_caption("Trivial Pursuit") 
+
+
 class ConfigFileError(Exception):
 	def __init__(self, message):
 		super().__init__(message)
@@ -129,11 +153,12 @@ class DecisionNeeded(Exception):
 		self.steps = steps
 
 if __name__ == "__main__":
-	a = Board("./Example_Board.json", 1)
+	a = Board("./4 Categories Board.json", 1)
 
 	while True:
 		try:
-			a.MovePlayer(0, int(input("Steps: ")), -1, -1)
+			# a.MovePlayer(0, int(input("Steps: ")), -1, -1)
+			a.MovePlayer(0, 1, -1, -1)
 		except DecisionNeeded as decision:
 			print(decision.options)
 			a.MovePlayer(0, decision.steps, int(input("Choice: ")))
@@ -143,9 +168,9 @@ if __name__ == "__main__":
 		except QuestionError as e:
 			a.RenewQuestions(e.category)
 
-		i = int(input("Give cheese?"))
-		if i != -1:
-			print(a.GiveCheese(0))
+		# i = int(input("Give cheese?"))
+		# if i != -1:
+		# 	print(a.GiveCheese(0))
 
-			if a.CheckWin(0):
-				break
+		# 	if a.CheckWin(0):
+		# 		break
