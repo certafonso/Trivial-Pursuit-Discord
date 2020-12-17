@@ -13,12 +13,15 @@ class Game():
 		self.Players = players
 		self.PlayerTurn = 1
 		self.GameStage = 0
-		self.Board = Board.Board("Example_Board.json", len(players))
+		self.Board = Board.Board("./4 Categories Board.json", len(players)-1)
 		# Game Stages:
 		# 0 - Roll dice
 		# 1 - Choose Direction
 		# 2 - Choose category
 		# 3 - answer question
+
+		self.Board.StartGraphics()
+		print("Game Started")
 
 	async def on_message(self, message):
 		"""Will handle messages for the game nPeopleAreLying"""
@@ -44,7 +47,7 @@ class Game():
 
 				self.GameStage = 0
 				mention = self.Players[self.PlayerTurn].mention
-				await self.Channel.send(f"Great! {mention} you get to go again.")
+				await self.Channel.send(f"Great! {mention} you get to go again. \nRoll by typing ``-roll`` in chat.")
 
 			elif command[0] == "-reject" and self.Players[0] == message.author:
 				self.GameStage = 0
@@ -53,7 +56,7 @@ class Game():
 					self.PlayerTurn = 1
 
 				mention = self.Players[self.PlayerTurn].mention
-				await self.Channel.send(f"Too bad! {mention} it's your turn.")
+				await self.Channel.send(f"Too bad! {mention} it's your turn. \nRoll by typing ``-roll`` in chat.")
 
 	async def move(self, steps, direction = -1):
 		""" Moves the player """
@@ -66,7 +69,7 @@ class Game():
 			position = self.Board.players[self.PlayerTurn]["Position"]
 			self.GameStage = 1
 			self.steps = decision.steps
-			await self.Channel.send(f"You are in {position} choose one of the following directions: {decision.options}")
+			await self.Channel.send(f"You are in {position} choose one of the following directions: {decision.options}. \nChoose by typing ``-go [option]`` in chat.")
 		
 		except ValueError:
 			await self.Channel.send(f"{direction} is not a number. Try again.")
