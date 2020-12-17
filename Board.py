@@ -1,6 +1,5 @@
 import json
-from random import shuffle
-import pygame
+from random import shuffle, randint
 
 class Board():
 	def __init__(self, board_file, n_players):
@@ -14,7 +13,7 @@ class Board():
 
 		self.Nodes = board_config["Nodes"]
 
-		self.players = [{"Position": 0, "Cheeses": []} for i in range(n_players)]
+		self.players = [{"Position": 0, "Cheeses": [], "Hue": randint(0, 360)} for i in range(n_players)]
 
 		self.Validate()
 
@@ -27,7 +26,7 @@ class Board():
 
 		self.Graphics = board_config["Graphics"]
 
-		self.Display = None
+		self.HTML = None
 
 	def Validate(self):
 		""" Tests if everything was imported properly """
@@ -72,6 +71,8 @@ class Board():
 
 		print(f"Was {curr_pos} moved to ", self.players[player_index]["Position"])
 
+		self.UpdateGraphics()
+
 		self.MovePlayer(player_index, steps-1, -1, curr_pos)
 	
 	def GetQuestion(self, category):
@@ -111,6 +112,7 @@ class Board():
 
 		if category not in self.players[player_index]["Cheeses"]:	# check if player already has the cheese
 			self.players[player_index]["Cheeses"].append(category)
+			self.UpdateGraphics()
 			return True
 		else: return False
 
@@ -123,19 +125,46 @@ class Board():
 		return False
 
 	def StartGraphics(self):
-		""" Loads all images needed for the graphic component """
+		""" Loads the HTML template needed for the graphic component """
 
-		for i in self.Graphics:
-			print(self.Graphics[i])
-			self.Graphics[i] = pygame.image.load(self.Graphics[i])
+		# check if graphics weren't already started
+		if self.HTML == None:
 
-		self.Graphics["Size"] = (self.Graphics["Board"].get_width(), self.Graphics["Board"].get_width())
+			# load Board template
+			with open("./Graphics/Board_Template.html", "r") as f:
+				self.HTML = f.read()
 
-		pygame.init()
+			# add board to the html
+			self.HTML = self.HTML.format(Board=self.Graphics["Board"], Players="{Players}")
 
-		self.Display = pygame.display.set_mode(self.Graphics["Size"])
-		pygame.display.set_caption("Trivial Pursuit") 
+			self.UpdateGraphics()
 
+	def UpdateGraphics(self):
+		""" Updates the graphics of the game """
+
+		# check if there are graphics started
+		if self.HTML != None:
+			Players = ""
+
+			for player in self.players:
+				# get position of player
+				print((self.Nodes[player["Position"]]["Square"][0][0], self.Nodes[player["Position"]]["Square"][0][1]))
+				print((self.Nodes[player["Position"]]["Square"][1][0], self.Nodes[player["Position"]]["Square"][1][1]))
+				posx = randint(self.Nodes[player["Position"]]["Square"][0][0], self.Nodes[player["Position"]]["Square"][0][1]-50)
+				posy = randint(self.Nodes[player["Position"]]["Square"][1][0], self.Nodes[player["Position"]]["Square"][1][1]-50)
+
+				# add player image
+				Players += self.Graphics["Player"].format(x=posx, y=posy, Hue=player["Hue"])
+
+				# add cheeses
+				for cheese in player["Cheeses"]:
+					Players += self.Graphics[cheese].format(x=posx, y=posy)
+
+			out = self.HTML.format(Players=Players)
+
+			# write to the html file
+			with open("./Trivial.html", "w") as f:
+				f.write(out)
 
 class ConfigFileError(Exception):
 	def __init__(self, message):
@@ -155,6 +184,8 @@ class DecisionNeeded(Exception):
 if __name__ == "__main__":
 	a = Board("./4 Categories Board.json", 1)
 
+	a.StartGraphics()
+
 	while True:
 		try:
 			# a.MovePlayer(0, int(input("Steps: ")), -1, -1)
@@ -168,9 +199,7 @@ if __name__ == "__main__":
 		except QuestionError as e:
 			a.RenewQuestions(e.category)
 
-		# i = int(input("Give cheese?"))
-		# if i != -1:
-		# 	print(a.GiveCheese(0))
+		print(a.GiveCheese(0))
 
 		# 	if a.CheckWin(0):
 		# 		break
